@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+{% set s = result.summary %}
+<h1>Month-end overview</h1>
+<div class="sub">Period {{ result.period_start }} to {{ result.period_end }} &middot; amounts in INR &middot; bank amounts are gross (no fees in the data) &middot; payments positive, refunds negative</div>
+
+{% set cls = {'RECONCILED':'s-ok','EXPLAINED - ACTION REQUIRED':'s-warn','UNEXPLAINED DIFFERENCE':'s-bad','NO DATA':'s-none'}[result.status] %}
+<div class="status {{ cls }}">Reconciliation status: {{ result.status }}
+  &middot; gap {{ s.aggregate_difference_raw|money }} &middot; explained {{ s.explained_difference|money }} &middot; unexplained residual {{ s.unexplained_residual|money }}</div>
+
+<div class="grid">
+  <div class="kpi"><div class="l">Platform records</div><div class="v">{{ s.platform_records }}</div></div>
+  <div class="kpi"><div class="l">Bank settlement records</div><div class="v">{{ s.bank_records }}</div></div>
+  <div class="kpi"><div class="l">Platform net total (payments - refunds)</div><div class="v">{{ s.platform_net_total|money }}</div></div>
+  <div class="kpi"><div class="l">Bank net total (settled in period)</div><div class="v">{{ s.bank_net_total|money }}</div></div>
+  <div class="kpi"><div class="l">Matched transactions</div><div class="v">{{ s.matched_count }}</div></div>
+  <div class="kpi"><div class="l">Unmatched platform transactions</div><div class="v">{{ s.unmatched_platform_count }}</div></div>
+  <div class="kpi"><div class="l">Discrepancy rows (actionable)</div><div class="v">{{ s.discrepancy_count }} ({{ s.actionable_count }})</div></div>
+  <div class="kpi"><div class="l">Total discrepancy amount (gross)</div><div class="v">{{ s.gross_discrepancy_amount|money }}</div></div>
+  <div class="kpi"><div class="l">Duplicate amount excluded</div><div class="v">{{ s.duplicate_amount_excluded|money }}</div></div>
+  <div class="kpi"><div class="l">Aggregate difference (clean totals)</div><div class="v">{{ s.aggregate_difference_clean|money }}</div></div>
+</div>
+
+<h2 style="margin-top:20px">The four mandatory discrepancies</h2>
+<div class="grid">
+  {% for c in cards %}
+  <a class="kpi" style="text-decoration:none;color:inherit" href="{{ url_for('discrepancies', type=c.key) }}">
+    <div class="l">{{ c.title }}</div><div class="v">{{ c.count }}</div>
+    <div class="note">month-end impact {{ c.impact|money }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="two" style="margin-top:16px">
+  <div class="card"><h2>How the gap is explained (platform - bank)</h2>
+    <table>
+      <tr><th>Item</th><th class="num">Records</th><th class="num">Amount</th></tr>
+      <tr><td><b>Platform net total</b></td><td></td><td class="num">{{ s.platform_net_total|money }}</td></tr>
+      <tr><td><b>Bank net total</b></td><td></td><td class="num">{{ s.bank_net_total|money }}</td></tr>
+      <tr><td><b>Gap to explain</b></td><td></td><td class="num"><b>{{ s.aggregate_difference_raw|money }}</b></td></tr>
+      {% for i in result.bridge %}{% if i.count %}
+      <tr><td>{{ i.label }}</td><td class="num">{{ i.count }}</td><td class="num {{ 'neg' if i.amount < 0 }}">{{ i.amount|money }}</td></tr>
+      {% endif %}{% endfor %}
+      <tr><td><b>Explained total</b></td><td></td><td class="num"><b>{{ s.explained_difference|money }}</b></td></tr>
+      <tr><td><b>Unexplained residual</b></td><td></td><td class="num"><b>{{ s.unexplained_residual|money }}</b></td></tr>
+    </table>
+    <p class="note">Positive = platform shows more than the bank has received in the month. Residual must be 0.</p>
+  </div>
+  <div class="card"><h2>Gap by cause (amount)</h2>{{ bridge_chart|safe }}
+    <h2 style="margin-top:16px">Discrepancy rows by category</h2>{{ count_chart|safe }}</div>
+</div>
+{% endblock %}

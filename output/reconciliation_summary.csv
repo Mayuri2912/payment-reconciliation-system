@@ -1,0 +1,38 @@
+section,item,count,amount
+status,EXPLAINED - ACTION REQUIRED,,
+period,2026-11-01 to 2026-11-30,,
+totals,platform_payments_total,,6849143.780
+totals,platform_refunds_total,,-283316.32
+totals,platform_net_total,,6565827.460
+totals,bank_payments_total,,6415189.69
+totals,bank_refunds_total,,-283316.32
+totals,bank_net_total,,6131873.37
+totals,aggregate_difference_raw,,433954.090
+totals,duplicate_amount_excluded,,218.93
+totals,platform_net_clean,,6565608.530
+totals,bank_net_clean,,6131873.37
+totals,aggregate_difference_clean,,433735.160
+totals,matched_platform_amount,,6131992.315
+totals,unmatched_platform_amount,,433616.215
+totals,gross_discrepancy_amount,,441816.200
+counts,platform_records,563,
+counts,bank_records,554,
+counts,matched_count,523,
+counts,unmatched_platform_count,31,
+counts,unexpected_bank_count,2,
+counts,discrepancy_count,147,
+counts,actionable_count,7,
+counts,invalid_records,0,
+bridge,Duplicate entries in platform data,1,218.93
+bridge,Duplicate entries in bank data,0,0
+bridge,Settled next month (timing),29,414108.205
+bridge,Rounding differences (sum of lines),111,-0.555
+bridge,Amount mismatches,1,4050.00
+bridge,Missing settlements,2,19508.01
+bridge,In transit (not yet due),0,0
+bridge,Unexpected bank transactions,2,-3930.50
+bridge,Explained difference,,433954.090
+bridge,Unexplained residual,,0.000
+rounding,lines,111,
+rounding,aggregate difference (bank minus platform),,0.555
+rounding,difference if rounded once on total,,0.005

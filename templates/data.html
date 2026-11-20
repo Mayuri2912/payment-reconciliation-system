@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Data management</h1>
+<div class="sub">Generate repeatable synthetic datasets, download the CSVs, upload your own, or re-run the reconciliation.</div>
+
+<div class="two">
+<div class="card"><h2>Generate synthetic datasets</h2>
+  <form method="post" action="{{ url_for('data_generate') }}" class="inline">
+    <label>Seed <input type="number" name="seed" value="42" style="width:90px"></label>
+    <label><select name="inject"><option value="yes">With planted discrepancies</option><option value="no">Clean month (no planted errors)</option></select></label>
+    <button type="submit">Generate and reconcile</button>
+  </form>
+  <p class="note">Same seed gives identical files. November 2026 platform data, bank settlements run into December.</p>
+</div>
+<div class="card"><h2>Re-run reconciliation</h2>
+  <form method="post" action="{{ url_for('data_rerun') }}" class="inline">
+    <label>Rounding tolerance per line <input name="tolerance" value="{{ config.tolerance }}" style="width:80px"></label>
+    <button type="submit">Run again</button>
+  </form>
+  <p class="note">Lines whose difference is within the tolerance count as rounding; larger ones become amount mismatches.</p>
+</div>
+</div>
+
+<div class="card"><h2>Download CSV files</h2>
+  <a class="btn alt" href="{{ url_for('download', name='platform.csv') }}">platform_transactions.csv</a>
+  <a class="btn alt" href="{{ url_for('download', name='bank.csv') }}">bank_settlements.csv</a>
+  <a class="btn" href="{{ url_for('download', name='report.csv') }}">discrepancy report CSV</a>
+  <a class="btn" href="{{ url_for('download', name='summary.csv') }}">summary CSV</a>
+</div>
+
+<div class="card"><h2>Upload your own CSV files</h2>
+  <form method="post" action="{{ url_for('data_upload') }}" enctype="multipart/form-data" class="inline">
+    <label>Platform CSV <input type="file" name="platform" accept=".csv"></label>
+    <label>Bank CSV <input type="file" name="bank" accept=".csv"></label>
+    <button type="submit">Upload and reconcile</button>
+  </form>
+  <p class="note">Platform columns: txn_id, timestamp, txn_date, txn_type (PAYMENT/REFUND), original_txn_id, amount, currency, status (SUCCESS/FAILED).
+  Bank columns: settlement_id, txn_id, settlement_date, amount, batch_id, currency, status (SETTLED). Payments positive, refunds negative.
+  There is no login or CSRF protection, so run this locally only.</p>
+</div>
+
+{% if manifest %}
+<div class="card"><h2>Planted discrepancies (generator manifest, ground truth)</h2>
+  <table><tr><th>Type</th><th>Dataset</th><th>Transaction IDs</th></tr>
+  {% for m in manifest %}<tr><td>{{ m.type }}</td><td>{{ m.dataset }}</td><td>{{ m.txn_ids[:6]|join(', ') }}{{ ' ... (' ~ m.txn_ids|length ~ ' total)' if m.txn_ids|length > 6 }}</td></tr>{% endfor %}
+  </table>
+  <p class="note">The engine never reads this list. It is only for checking that detection finds what was planted.</p></div>
+{% endif %}
+{% endblock %}

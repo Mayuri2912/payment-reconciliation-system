@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Discrepancy analysis</h1>
+<div class="sub">Every row below is produced by the detection rules from the actual data. Difference = expected (platform) - actual (bank). Month-end impact = effect on the gap between the two month totals.</div>
+<div class="tabs">
+  {% for k in mandatory %}<a class="must {{ 'on' if k==selected }}" href="{{ url_for('discrepancies', type=k) }}">{{ CATEGORY_INFO[k].title }} ({{ counts.get(k, 0) }})</a>{% endfor %}
+  {% for k in other %}<a class="{{ 'on' if k==selected }}" href="{{ url_for('discrepancies', type=k) }}">{{ CATEGORY_INFO[k].title }} ({{ counts.get(k, 0) }})</a>{% endfor %}
+</div>
+<div class="card">
+  <h2>{{ info.title }} <span class="pill p-{{ info.severity }}">{{ info.severity }}</span> {% if info.mandatory %}<span class="pill">mandatory type</span>{% endif %}</h2>
+  <p>{{ info.description }}</p>
+  {% if selected == 'ROUNDING_DIFFERENCE' and result.rounding.lines %}
+    {% set rd = result.rounding %}
+    <table style="max-width:760px">
+      <tr><td>Lines matched with a rounding difference</td><td class="num">{{ rd.lines }}</td></tr>
+      <tr><td>Rounding rule</td><td>{{ rd.rounding_rule }}</td></tr>
+      <tr><td>Largest single-line difference (tolerance {{ rd.tolerance }})</td><td class="num">{{ rd.max_line_difference }}</td></tr>
+      <tr><td>Platform sum of these lines</td><td class="num">{{ rd.platform_sum|money(3) }}</td></tr>
+      <tr><td>Bank sum of these lines</td><td class="num">{{ rd.bank_sum|money(3) }}</td></tr>
+      <tr><td><b>Aggregate difference (bank - platform), rounding each line</b></td><td class="num"><b>{{ rd.aggregate_difference|money(3) }}</b></td></tr>
+      <tr><td>Difference if only the total were rounded once</td><td class="num">{{ rd.difference_if_rounded_once|money(3) }}</td></tr>
+    </table>
+    <p class="note">Transaction-level rounding: the bank rounds every line, so every .xx5 goes up. Aggregate-level rounding: rounding only the total once would change it by a fraction of a paisa. Small line differences pass the per-line check, but they all lean one way, so they build up.</p>
+  {% endif %}
+</div>
+<div class="scroll">
+<table>
+  <tr><th>Type</th><th>Txn ID</th><th>Settlement ID</th><th>Dataset</th><th>Platform date</th><th>Settlement date</th>
+      <th class="num">Expected</th><th class="num">Actual</th><th class="num">Difference</th><th class="num">Month-end impact</th><th>Explanation</th><th>Suggested action</th></tr>
+  {% for d in rows %}
+  <tr>
+    <td>{{ d.title }}</td><td>{{ d.txn_id }}</td><td>{{ d.settlement_id }}</td><td>{{ d.dataset }}</td>
+    <td>{{ d.platform_date or '' }}</td><td>{{ d.settlement_date or '' }}</td>
+    <td class="num">{{ d.expected_amount|money }}</td><td class="num">{{ d.actual_amount|money }}</td>
+    <td class="num {{ 'neg' if d.difference < 0 }}">{{ d.difference|money }}</td>
+    <td class="num {{ 'neg' if d.bridge_effect < 0 }}">{{ d.bridge_effect|money }}</td>
+    <td style="min-width:360px">{{ d.explanation }}</td><td style="min-width:220px">{{ d.suggested_action }}</td>
+  </tr>
+  {% else %}<tr><td colspan="12">None found in the current data.</td></tr>{% endfor %}
+</table>
+</div>
+{% endblock %}

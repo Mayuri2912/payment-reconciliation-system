@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+{% set s = result.summary %}
+<h1>Reconciliation report</h1>
+<div class="sub">Period {{ result.period_start }} to {{ result.period_end }} &middot; tolerance {{ result.config.tolerance }} &middot; settlement window T+{{ result.config.max_settle_days }} business days + {{ result.config.grace_days }} grace</div>
+<p>
+  <a class="btn" href="{{ url_for('download', name='report.csv') }}">Download discrepancy report (CSV)</a>
+  <a class="btn alt" href="{{ url_for('download', name='summary.csv') }}">Download summary and bridge (CSV)</a>
+</p>
+{% set cls = {'RECONCILED':'s-ok','EXPLAINED - ACTION REQUIRED':'s-warn','UNEXPLAINED DIFFERENCE':'s-bad','NO DATA':'s-none'}[result.status] %}
+<div class="status {{ cls }}">Status: {{ result.status }}</div>
+
+<div class="two">
+<div class="card"><h2>Financial summary</h2>
+<table>
+  <tr><th></th><th class="num">Platform</th><th class="num">Bank</th></tr>
+  <tr><td>Payments (gross)</td><td class="num">{{ s.platform_payments_total|money }}</td><td class="num">{{ s.bank_payments_total|money }}</td></tr>
+  <tr><td>Refunds</td><td class="num neg">{{ s.platform_refunds_total|money }}</td><td class="num neg">{{ s.bank_refunds_total|money }}</td></tr>
+  <tr><td><b>Net total as recorded</b></td><td class="num"><b>{{ s.platform_net_total|money }}</b></td><td class="num"><b>{{ s.bank_net_total|money }}</b></td></tr>
+  <tr><td>Less duplicates excluded</td><td class="num">{{ s.duplicate_amount_excluded_platform|money }}</td><td class="num">{{ s.duplicate_amount_excluded_bank|money }}</td></tr>
+  <tr><td><b>Clean net total</b></td><td class="num"><b>{{ s.platform_net_clean|money }}</b></td><td class="num"><b>{{ s.bank_net_clean|money }}</b></td></tr>
+  <tr><td>Aggregate difference (raw / clean)</td><td class="num" colspan="2">{{ s.aggregate_difference_raw|money }} / {{ s.aggregate_difference_clean|money }}</td></tr>
+</table>
+<p class="note">Settlement basis: {{ s.settlement_basis }}. The bank total counts only settlements dated inside the month.</p></div>
+
+<div class="card"><h2>Matching summary</h2>
+<table>
+  <tr><td>Matched transactions</td><td class="num">{{ s.matched_count }}</td><td class="num">{{ s.matched_platform_amount|money(3) }}</td></tr>
+  <tr><td>Unmatched platform transactions (timing, missing, in transit)</td><td class="num">{{ s.unmatched_platform_count }}</td><td class="num">{{ s.unmatched_platform_amount|money(3) }}</td></tr>
+  <tr><td>Unexpected bank records</td><td class="num">{{ s.unexpected_bank_count }}</td><td></td></tr>
+  <tr><td>Failed platform transactions (no settlement expected)</td><td class="num">{{ s.failed_platform_count }}</td><td></td></tr>
+  <tr><td>Invalid records quarantined</td><td class="num">{{ s.invalid_records }}</td><td></td></tr>
+  <tr><td>Total discrepancy amount (gross, absolute)</td><td></td><td class="num">{{ s.gross_discrepancy_amount|money(3) }}</td></tr>
+</table></div>
+</div>
+
+<div class="card"><h2>Discrepancy breakdown</h2>
+<table>
+  <tr><th>Category</th><th class="num">Rows</th><th class="num">Month-end impact</th></tr>
+  {% for k in mandatory + other %}
+  <tr><td><a href="{{ url_for('discrepancies', type=k) }}">{{ CATEGORY_INFO[k].title }}</a></td><td class="num">{{ counts.get(k, 0) }}</td>
+      <td class="num">{{ result.discrepancies|selectattr('category','equalto',k)|sum(attribute='bridge_effect')|money(3) }}</td></tr>
+  {% endfor %}
+</table></div>
+
+<div class="card"><h2>Important observations</h2>
+<ul>{% for o in result.observations %}<li>{{ o }}</li>{% endfor %}</ul></div>
+{% endblock %}

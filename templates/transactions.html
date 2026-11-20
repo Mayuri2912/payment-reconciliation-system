@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% macro sortlink(label, key) -%}
+  {% set new_order = 'desc' if (sort==key and order=='asc') else 'asc' %}
+  <a href="{{ url_for('transactions', **dict(args, sort=key, order=new_order)) }}">{{ label }}{{ ' ▲' if sort==key and order=='asc' }}{{ ' ▼' if sort==key and order=='desc' }}</a>
+{%- endmacro %}
+{% block content %}
+<h1>Transactions</h1>
+<div class="tabs">
+  <a class="{{ 'on' if dataset=='platform' }}" href="{{ url_for('transactions', dataset='platform') }}">Platform transactions</a>
+  <a class="{{ 'on' if dataset=='bank' }}" href="{{ url_for('transactions', dataset='bank') }}">Bank settlement records</a>
+</div>
+<form class="inline" method="get">
+  <input type="hidden" name="dataset" value="{{ dataset }}">
+  <input name="q" value="{{ q }}" placeholder="Search txn / settlement / batch ID">
+  <select name="status"><option value="">All match results</option>{% for s in statuses %}<option value="{{ s }}" {{ 'selected' if s==status }}>{{ s }}</option>{% endfor %}</select>
+  <select name="type"><option value="">Payments and refunds</option><option value="PAYMENT" {{ 'selected' if txn_type=='PAYMENT' }}>PAYMENT</option><option value="REFUND" {{ 'selected' if txn_type=='REFUND' }}>REFUND</option></select>
+  <button type="submit">Filter</button>
+  <span class="note">{{ total }} record(s)</span>
+</form>
+<div class="scroll">
+<table>
+  <tr><th>{{ sortlink('Txn ID','id') }}</th><th>Type</th><th class="num">{{ sortlink('Amount','amount') }}</th>
+      <th>{{ sortlink('Platform date','date') }}</th><th>Settlement date</th><th>Settlement ID</th>
+      <th>{{ 'Original txn' if dataset=='platform' else 'Batch' }}</th><th>Status</th><th>Matching result</th><th>Note</th></tr>
+  {% for x in rows %}
+  <tr><td>{{ x.txn_id }}</td><td>{{ x.txn_type }}</td><td class="num {{ 'neg' if x.amount < 0 }}">{{ x.amount|money }}</td>
+      <td>{{ x.date or '' }}</td><td>{{ x.settlement_date or '' }}</td><td>{{ x.settlement_id }}</td><td>{{ x.ref }}</td>
+      <td>{{ x.status }}</td><td>{{ x.match }}</td><td>{{ x.note }}</td></tr>
+  {% else %}<tr><td colspan="10">No records match.</td></tr>{% endfor %}
+</table>
+</div>
+<div class="pager">
+  {% if page > 1 %}<a class="btn alt" href="{{ url_for('transactions', **dict(args, page=page-1)) }}">Previous</a>{% endif %}
+  <span>Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a class="btn alt" href="{{ url_for('transactions', **dict(args, page=page+1)) }}">Next</a>{% endif %}
+</div>
+{% endblock %}
